@@ -1,7 +1,8 @@
-"""输出标签解析器 — 将 LLM 输出的 XML 标签转换为平台原生消息组件。
+"""输出标签解析器 — 将 LLM 输出的控制标签转为平台原生消息组件。
 
 标签说明：
   <mention id="user_id"/>  → At 组件
+  [At: user_id]            → At 组件（LLM 从聊天历史中自然习得的格式，兼容处理）
   <quote id="msg_id"/>     → Reply 组件
   <refuse/>                → 取消本次回复
 """
@@ -13,10 +14,11 @@ from astrbot.api.message_components import At, Plain, Reply
 
 # ── 正则匹配 ──────────────────────────────────────────────
 
-_MENTION_RE = re.compile(
+_MENTION_XML_RE = re.compile(
     r"""<mention\s+id\s*=\s*['"]([^'"]+)['"]\s*/?>""",
     re.IGNORECASE,
 )
+_MENTION_NATIVE_RE = re.compile(r"\[At:\s*(\d+)\]")
 _QUOTE_RE = re.compile(
     r"""<quote\s+id\s*=\s*['"]([^'"]+)['"]\s*/?>""",
     re.IGNORECASE,
@@ -36,11 +38,11 @@ def transform_result_chain(
 
     处理流程：
     1. 先扫描链中是否包含 <quote/>，若有则提取 msg_id 插入链首的 Reply 组件。
-    2. 遍历链中的 Plain 文本，将 <mention/> 替换为 At，将 <quote/> 剔除。
+    2. 遍历链中的 Plain 文本，将 <mention/> 和 [At:xxx] 替换为 At，将 <quote/> 剔除。
 
     Args:
         chain: 消息组件列表（由 `event.get_result().chain` 获取）。
-        parse_mention: 是否解析 <mention/> 标签。
+        parse_mention: 是否解析 mention 标签（<mention/> + [At:xxx]）。
         parse_quote: 是否解析 <quote/> 标签。
 
     Returns:
@@ -70,8 +72,8 @@ def transform_result_chain(
         if parse_quote:
             text = _QUOTE_RE.sub("", text)
 
-        # 替换 <mention/> → At
-        if parse_mention and _MENTION_RE.search(text):
+        # 替换 mention → At（支持两种格式）
+        if parse_mention and (_MENTION_XML_RE.search(text) or _MENTION_NATIVE_RE.search(text)):
             new_chain.extend(_split_mentions(text))
         else:
             if text.strip():
@@ -88,9 +90,10 @@ def clean_response_text_for_history(text: str) -> str:
     """清理回复文本中的标签，用于写入聊天历史。
 
     <mention/> → [At: user_id]
+    [At: xxx]  → [At: user_id]（保持不变，与 AstrBot 历史格式一致）
     <quote/>   → 移除
     """
-    text = _MENTION_RE.sub(r"[At: \1]", text)
+    text = _MENTION_XML_RE.sub(r"[At: \1]", text)
     text = _QUOTE_RE.sub("", text)
     return text.strip()
 
@@ -136,7 +139,9 @@ def _chain_has_tags(
         text = comp.text
         if parse_quote and _QUOTE_RE.search(text):
             return True
-        if parse_mention and _MENTION_RE.search(text):
+        if parse_mention and (
+            _MENTION_XML_RE.search(text) or _MENTION_NATIVE_RE.search(text)
+        ):
             return True
     return False
 
@@ -155,15 +160,22 @@ def _extract_quote_id(chain: list, parse_quote: bool) -> Optional[str]:
 
 
 def _split_mentions(text: str) -> list:
-    """将文本按 <mention/> 分割，mention 部分替换为 At 组件。"""
+    """将文本按 mention 分割，mention 部分替换为 At 组件。
+
+    同时识别 <mention id="xxx"/> 和 [At:xxx] 两种格式。
+    """
+    # 统一所有 mention 格式为占位符
+    unified = _MENTION_XML_RE.sub(r"[At: \1]", text)
+
+    # 按 [At:xxx] 分割
     parts: list = []
-    segments = _MENTION_RE.split(text)
+    segments = _MENTION_NATIVE_RE.split(unified)
     for idx, segment in enumerate(segments):
         if idx % 2 == 0:
             # 偶数索引 = 普通文本
             if segment.strip():
                 parts.append(Plain(text=segment))
         else:
-            # 奇数索引 = mention 中的 user_id
+            # 奇数索引 = user_id
             parts.append(At(qq=segment))
     return parts

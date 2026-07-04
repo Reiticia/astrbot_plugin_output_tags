@@ -1,6 +1,8 @@
 """生成注入系统提示词中的输出标签使用说明。
 
-LLM 需要明确知道每个标签的语法和用法，这里根据配置开关生成对应指令。
+LLM 需要明确知道每个控制标签的语法。本插件同时兼容两种 mention 格式：
+  - <mention id="user_id"/>  —— 明确的 XML 标签（推荐）
+  - [At: user_id]             —— 与聊天历史格式一致（LLM 会自然使用）
 """
 
 
@@ -12,7 +14,7 @@ def build_interaction_instructions(
     """构建输出标签使用说明，用于注入 LLM 系统提示词。
 
     Args:
-        mention_enable: 是否启用 <mention/> 功能。
+        mention_enable: 是否启用 mention 功能。
         quote_enable: 是否启用 <quote/> 功能。
         refuse_enable: 是否启用 <refuse/> 功能。
 
@@ -24,20 +26,19 @@ def build_interaction_instructions(
     # ── Mention 指令 ──
     if mention_enable:
         parts.append(
-            "## Mention\n"
-            "当你需要在回复中 @提及某个用户时，使用控制标签：<mention id=\"user_id\"/>。\n"
-            "例如：<mention id=\"123456\"/> 你好！\n"
+            "## At/Mention\n"
+            "当你需要在回复中 @提及某个用户时，使用 `[At: user_id]` 格式。\n"
+            "例如：`[At: 123456]` 你好！\n"
             "一条消息中可以提及多个用户。user_id 可以从聊天历史中找到。\n"
-            "不要对自己使用 mention 标签。\n"
-            "重要：mention 标签不是容器标签，不要输出 </mention>。"
+            "不要对自己使用 mention。"
         )
 
     # ── Quote 指令 ──
     if quote_enable:
         parts.append(
             "## Quote\n"
-            "当你想引用/回复某条特定消息时，在回复的最开头放置 <quote id=\"msg_id\"/>。\n"
-            "例如：<quote id=\"12345\"/> 我同意这个观点！\n"
+            "当你想引用/回复某条特定消息时，在回复的最开头放置 `<quote id=\"msg_id\"/>`。\n"
+            "例如：`<quote id=\"12345\"/>` 我同意这个观点！\n"
             "msg_id 可以从聊天历史中 # 符号后找到（如 #msg12345）。\n"
             "每条回复最多引用一条消息，且 quote 标签必须是输出中的第一个内容。\n"
             "只有确实需要引用具体消息时才使用 quote。\n"
