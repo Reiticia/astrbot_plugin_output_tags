@@ -1,0 +1,20 @@
+{
+    "mention_enable": {
+        "description": "启用 <mention id=\"xxx\"/> 标签解析，LLM 回复中的 mention 会被转为平台 @提及。",
+        "type": "bool",
+        "default": true,
+        "hint": "关闭后 LLM 仍可能输出 mention 标签，但不会被转为 @组件。"
+    },
+    "quote_enable": {
+        "description": "启用 <quote id=\"xxx\"/> 标签解析，LLM 回复中的 quote 会被转为平台引用回复。",
+        "type": "bool",
+        "default": true,
+        "hint": "关闭后 LLM 仍可能输出 quote 标签，但不会被转为引用组件。"
+    },
+    "refuse_enable": {
+        "description": "启用 <refuse/> 标签解析，LLM 输出 <refuse/> 时取消本次回复发送。",
+        "type": "bool",
+        "default": true,
+        "hint": "关闭后 <refuse/> 会作为普通文本发送，不会取消回复。"
+    }
+}
