@@ -23,7 +23,7 @@ _QUOTE_RE = re.compile(
     r"""<quote\s+id\s*=\s*['"]([^'"]+)['"]\s*/?>""",
     re.IGNORECASE,
 )
-_REFUSE_RE = re.compile(r"<refuse/>")
+_REFUSE_RE = re.compile(r"<refuse\s*/?>", re.IGNORECASE)
 
 
 # ── 公开函数 ─────────────────────────────────────────────
@@ -117,7 +117,7 @@ def chain_has_refuse_tag(chain: list) -> bool:
 
 # ── 内部辅助函数 ─────────────────────────────────────────
 
-_NORMALIZE_QUOTE_RE = re.compile(r"^(?:#|msg)", re.IGNORECASE)
+_NORMALIZE_QUOTE_RE = re.compile(r"^(?:#|msg)+", re.IGNORECASE)
 
 
 def _normalize_quote_id(raw: str) -> str:
