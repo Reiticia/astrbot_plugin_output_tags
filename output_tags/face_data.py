@@ -1,7 +1,8 @@
 """QQ 经典表情（QFace）数据管理。
 
-不在代码中硬编码表情 id → 名称映射，而是在 AstrBot 加载完成后从远程拉取一次最新数据，
-写入插件数据目录（覆盖旧缓存）。之后插件运行期间直接使用内存中的缓存结果。
+不在代码中硬编码表情 id → 名称映射，而是在插件加载时（含 AstrBot 整体启动、以及仅
+热重载/更新本插件的场景）从远程拉取一次最新数据，写入插件数据目录（覆盖旧缓存）。
+之后插件运行期间直接使用内存中的缓存结果，触发时机见 `main.Main.__init__`。
 
 数据来源：https://koishi.js.org/QFace
 """
@@ -39,10 +40,13 @@ async def refresh_face_cache(data_dir: Path) -> list[tuple[int, str]]:
 
     faces = _parse_faces(raw)
 
-    data_dir.mkdir(parents=True, exist_ok=True)
-    cache_path = data_dir / CACHE_FILE_NAME
-    cache_path.write_text(json.dumps(faces, ensure_ascii=False), encoding="utf-8")
-    logger.info(f"output-tags | 已更新 QFace 表情数据缓存，共 {len(faces)} 条 | {cache_path}")
+    try:
+        data_dir.mkdir(parents=True, exist_ok=True)
+        cache_path = data_dir / CACHE_FILE_NAME
+        cache_path.write_text(json.dumps(faces, ensure_ascii=False), encoding="utf-8")
+        logger.info(f"output-tags | 已更新 QFace 表情数据缓存，共 {len(faces)} 条 | {cache_path}")
+    except OSError as e:
+        logger.warning(f"output-tags | 写入 QFace 表情数据缓存失败，本次仅在内存中生效 | {e!r}")
 
     return [(face_id, name) for face_id, name in faces]
 

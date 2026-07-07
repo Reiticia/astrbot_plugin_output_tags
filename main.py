@@ -7,6 +7,8 @@
   - <refuse/>             →  取消发送
 """
 
+import asyncio
+
 from astrbot.api import logger
 from astrbot.api.event import AstrMessageEvent, filter
 from astrbot.api.provider import LLMResponse
@@ -30,7 +32,21 @@ class Main(Star):
         self._config = config or {}
         self._data_dir = StarTools.get_data_dir(PLUGIN_NAME)
         self._faces: list[tuple[int, str]] = load_face_cache(self._data_dir)
+        # 在 __init__ 中触发刷新：无论是 AstrBot 整体启动还是仅热重载/更新本插件，
+        # 都会重新实例化 Star 子类、走到这里，因此不依赖 on_astrbot_loaded（只在整体启动时触发一次）。
+        self._face_refresh_task = self._schedule_face_refresh()
         logger.info("output-tags | 插件已加载")
+
+    def _schedule_face_refresh(self) -> asyncio.Task | None:
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            logger.warning("output-tags | 当前不在事件循环中，跳过表情数据自动刷新")
+            return None
+        return loop.create_task(self._refresh_face_cache())
+
+    async def _refresh_face_cache(self) -> None:
+        self._faces = await refresh_face_cache(self._data_dir)
 
     # ── 配置读取 ──────────────────────────────────────────
 
@@ -50,11 +66,6 @@ class Main(Star):
         return int(self._config.get("face_hint_count", 50))
 
     # ── 生命周期钩子 ──────────────────────────────────────
-
-    @filter.on_astrbot_loaded()
-    async def refresh_face_data(self) -> None:
-        """AstrBot 加载完成后，从远程拉取最新表情数据并覆盖本地缓存。"""
-        self._faces = await refresh_face_cache(self._data_dir)
 
     @filter.on_llm_request()
     async def inject_tag_instructions(self, event: AstrMessageEvent, req) -> None:
