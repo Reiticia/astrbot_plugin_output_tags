@@ -5,6 +5,7 @@
   [At: user_id]            → At 组件（LLM 从聊天历史中自然习得的格式，兼容处理）
   <quote id="msg_id"/>     → Reply 组件
   <face id="face_id"/>     → Face 组件（QQ 经典表情）
+  [Face: face_id]          → Face 组件（LLM 从聊天历史中自然习得的格式，兼容处理）
   <refuse/>                → 取消本次回复
 """
 
@@ -29,6 +30,7 @@ _FACE_RE = re.compile(
     r"""<face\s+id\s*=\s*['"]?(\d+)['"]?\s*/?>""",
     re.IGNORECASE,
 )
+_FACE_NATIVE_RE = re.compile(r"\[Face:\s*(\d+)\]", re.IGNORECASE)
 _REFUSE_RE = re.compile(r"<refuse\s*/?>", re.IGNORECASE)
 
 
@@ -155,7 +157,7 @@ def _chain_has_tags(
             _MENTION_XML_RE.search(text) or _MENTION_NATIVE_RE.search(text)
         ):
             return True
-        if parse_face and _FACE_RE.search(text):
+        if parse_face and (_FACE_RE.search(text) or _FACE_NATIVE_RE.search(text)):
             return True
     return False
 
@@ -182,6 +184,7 @@ def _build_split_pattern(parse_mention: bool, parse_face: bool) -> Optional[re.P
         alternatives.append(r"\[At:\s*(?P<mention_native>\d+)\]")
     if parse_face:
         alternatives.append(r"""<face\s+id\s*=\s*['"]?(?P<face_id>\d+)['"]?\s*/?>""")
+        alternatives.append(r"\[Face:\s*(?P<face_native>\d+)\]")
 
     if not alternatives:
         return None
@@ -205,6 +208,8 @@ def _split_tagged_text(text: str, pattern: re.Pattern) -> list:
             parts.append(At(qq=group["mention_native"]))
         elif group.get("face_id") is not None:
             parts.append(Face(id=int(group["face_id"])))
+        elif group.get("face_native") is not None:
+            parts.append(Face(id=int(group["face_native"])))
 
         last = match.end()
 

@@ -18,7 +18,7 @@
         "hint": "关闭后 <refuse/> 会作为普通文本发送，不会取消回复。"
     },
     "face_enable": {
-        "description": "启用 <face id=\"xxx\"/> 标签解析，LLM 回复中的 face 会被转为平台 QQ 表情。",
+        "description": "启用 [Face: xxx] / <face id=\"xxx\"/> 标签解析，LLM 回复中的 face 会被转为平台 QQ 表情。",
         "type": "bool",
         "default": true,
         "hint": "关闭后 LLM 仍可能输出 face 标签，但不会被转为表情组件。"

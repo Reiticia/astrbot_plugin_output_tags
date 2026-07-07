@@ -1,8 +1,11 @@
 """生成注入系统提示词中的输出标签使用说明。
 
 LLM 需要明确知道每个控制标签的语法。本插件同时兼容两种 mention 格式：
-  - <mention id="user_id"/>  —— 明确的 XML 标签（推荐）
-  - [At: user_id]             —— 与聊天历史格式一致（LLM 会自然使用）
+  - <mention id="user_id"/>  —— 明确的 XML 标签
+  - [At: user_id]             —— 与聊天历史格式一致（推荐，LLM 会自然使用）
+
+Face 同理，同时兼容 <face id="face_id"/> 与 [Face: face_id] 两种格式，
+后者与聊天历史格式一致，是本模块指令中引导 LLM 使用的格式。
 
 表情（Face）的 id → 名称映射不写死在代码中，而是运行时从 `output_tags.face_data`
 下载并缓存后传入，详见 `build_interaction_instructions` 的 `faces` 参数。
@@ -69,8 +72,8 @@ def build_interaction_instructions(
     if face_enable:
         lines = [
             "## Face（QQ表情）",
-            '当你想发送一个 QQ 经典表情来表达情绪时，使用 `<face id="face_id"/>`。',
-            '例如：`<face id="21"/>` 好可爱！',
+            "当你想发送一个 QQ 经典表情来表达情绪时，使用 `[Face: face_id]` 格式。",
+            "例如：`[Face: 21]` 好可爱！",
             "一条消息中可以包含多个表情，且可以与文字混排。",
         ]
         hint = _build_face_hint(faces or [], face_hint_count)
