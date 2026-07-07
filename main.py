@@ -3,14 +3,16 @@
 将 LLM 输出的 XML 控制标签转为平台原生消息行为：
   - <mention id="xxx"/>  →  At 组件
   - <quote id="xxx"/>     →  Reply 组件
+  - <face id="xxx"/>      →  Face 组件
   - <refuse/>             →  取消发送
 """
 
 from astrbot.api import logger
 from astrbot.api.event import AstrMessageEvent, filter
 from astrbot.api.provider import LLMResponse
-from astrbot.api.star import Context, Star
+from astrbot.api.star import Context, Star, StarTools
 
+from .output_tags.face_data import load_face_cache, refresh_face_cache
 from .output_tags.instructions import build_interaction_instructions
 from .output_tags.parser import (
     chain_has_refuse_tag,
@@ -19,11 +21,15 @@ from .output_tags.parser import (
     transform_result_chain,
 )
 
+PLUGIN_NAME = "astrbot_plugin_output_tags"
+
 
 class Main(Star):
     def __init__(self, context: Context, config: dict | None = None) -> None:
         super().__init__(context)
         self._config = config or {}
+        self._data_dir = StarTools.get_data_dir(PLUGIN_NAME)
+        self._faces: list[tuple[int, str]] = load_face_cache(self._data_dir)
         logger.info("output-tags | 插件已加载")
 
     # ── 配置读取 ──────────────────────────────────────────
@@ -37,7 +43,18 @@ class Main(Star):
     def _cfg_refuse(self) -> bool:
         return bool(self._config.get("refuse_enable", True))
 
+    def _cfg_face(self) -> bool:
+        return bool(self._config.get("face_enable", True))
+
+    def _cfg_face_hint_count(self) -> int:
+        return int(self._config.get("face_hint_count", 50))
+
     # ── 生命周期钩子 ──────────────────────────────────────
+
+    @filter.on_astrbot_loaded()
+    async def refresh_face_data(self) -> None:
+        """AstrBot 加载完成后，从远程拉取最新表情数据并覆盖本地缓存。"""
+        self._faces = await refresh_face_cache(self._data_dir)
 
     @filter.on_llm_request()
     async def inject_tag_instructions(self, event: AstrMessageEvent, req) -> None:
@@ -46,6 +63,9 @@ class Main(Star):
             mention_enable=self._cfg_mention(),
             quote_enable=self._cfg_quote(),
             refuse_enable=self._cfg_refuse(),
+            face_enable=self._cfg_face(),
+            face_hint_count=self._cfg_face_hint_count(),
+            faces=self._faces,
         )
         if not instructions:
             return
@@ -73,6 +93,7 @@ class Main(Star):
             result.chain,
             parse_mention=self._cfg_mention(),
             parse_quote=self._cfg_quote(),
+            parse_face=self._cfg_face(),
         )
         if transformed is not None:
             result.chain = transformed

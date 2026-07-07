@@ -16,5 +16,17 @@
         "type": "bool",
         "default": true,
         "hint": "关闭后 <refuse/> 会作为普通文本发送，不会取消回复。"
+    },
+    "face_enable": {
+        "description": "启用 <face id=\"xxx\"/> 标签解析，LLM 回复中的 face 会被转为平台 QQ 表情。",
+        "type": "bool",
+        "default": true,
+        "hint": "关闭后 LLM 仍可能输出 face 标签，但不会被转为表情组件。"
+    },
+    "face_hint_count": {
+        "description": "注入到系统提示词中的 QQ 表情 id 提示数量，用于告知 LLM 有哪些表情可用及其含义。表情数据在 AstrBot 启动时自动从远程下载并缓存到插件数据目录。",
+        "type": "int",
+        "default": 50,
+        "hint": "数值越大 LLM 掌握的表情越丰富，但会增加系统提示词的 token 开销；填 0 或负数表示注入本次下载到的完整列表。"
     }
 }
