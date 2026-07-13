@@ -6,16 +6,16 @@
         "hint": "关闭后 LLM 仍可能输出 mention 标签，但不会被转为 @组件。"
     },
     "quote_enable": {
-        "description": "启用 <quote id=\"xxx\"/> 标签解析，LLM 回复中的 quote 会被转为平台引用回复。",
+        "description": "启用 [Quote: xxx] / <quote id=\"xxx\"/> 标签解析，LLM 回复中的 quote 会被转为平台引用回复。",
         "type": "bool",
         "default": true,
         "hint": "关闭后 LLM 仍可能输出 quote 标签，但不会被转为引用组件。"
     },
     "refuse_enable": {
-        "description": "启用 <refuse/> 标签解析，LLM 输出 <refuse/> 时取消本次回复发送。",
+        "description": "启用 [Refuse] / <refuse/> 标签解析，LLM 输出该标签时取消本次回复发送。",
         "type": "bool",
         "default": true,
-        "hint": "关闭后 <refuse/> 会作为普通文本发送，不会取消回复。"
+        "hint": "关闭后该标签会作为普通文本发送，不会取消回复。"
     },
     "face_enable": {
         "description": "启用 [Face: xxx] / <face id=\"xxx\"/> 标签解析，LLM 回复中的 face 会被转为平台 QQ 表情。",

@@ -1,10 +1,10 @@
 """输出标签插件 — 入口。
 
-将 LLM 输出的 XML 控制标签转为平台原生消息行为：
-  - <mention id="xxx"/>  →  At 组件
-  - <quote id="xxx"/>     →  Reply 组件
-  - <face id="xxx"/>      →  Face 组件
-  - <refuse/>             →  取消发送
+将 LLM 输出的控制标签转为平台原生消息行为（均兼容旧版 XML 格式与推荐的 bracket 格式）：
+  - <mention id="xxx"/>  / [At: xxx]     →  At 组件
+  - <quote id="xxx"/>    / [Quote: xxx]  →  Reply 组件
+  - <face id="xxx"/>     / [Face: xxx]   →  Face 组件
+  - <refuse/>            / [Refuse]      →  取消发送
 """
 
 import asyncio

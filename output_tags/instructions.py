@@ -60,12 +60,11 @@ def build_interaction_instructions(
     if quote_enable:
         parts.append(
             "## Quote\n"
-            "当你想引用/回复某条特定消息时，在回复的最开头放置 `<quote id=\"msg_id\"/>`。\n"
-            "例如：`<quote id=\"12345\"/>` 我同意这个观点！\n"
+            "当你想引用/回复某条特定消息时，在回复的最开头放置 `[Quote: msg_id]`。\n"
+            "例如：`[Quote: 12345]` 我同意这个观点！\n"
             "msg_id 可以从聊天历史中 # 符号后找到（如 #msg12345）。\n"
-            "每条回复最多引用一条消息，且 quote 标签必须是输出中的第一个内容。\n"
-            "只有确实需要引用具体消息时才使用 quote。\n"
-            "重要：quote 标签不是容器标签，不要输出 </quote>。"
+            "每条回复最多引用一条消息，且 quote 必须是输出中的第一个内容。\n"
+            "只有确实需要引用具体消息时才使用 quote。"
         )
 
     # ── Face 指令 ──
@@ -86,8 +85,8 @@ def build_interaction_instructions(
     if refuse_enable:
         parts.append(
             "## Refuse\n"
-            "如果你决定不回复当前消息，输出 `<refuse/>` 作为完整回复。\n"
-            "必须是纯文本 `<refuse/>`，不能有任何其他内容，前后不能有额外文字。\n"
+            "如果你决定不回复当前消息，输出 `[Refuse]` 作为完整回复。\n"
+            "必须是纯文本 `[Refuse]`，不能有任何其他内容，前后不能有额外文字。\n"
             "任何其他格式会被视为普通文本正常发送。"
         )
 

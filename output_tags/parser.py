@@ -1,12 +1,10 @@
 """输出标签解析器 — 将 LLM 输出的控制标签转为平台原生消息组件。
 
-标签说明：
-  <mention id="user_id"/>  → At 组件
-  [At: user_id]            → At 组件（LLM 从聊天历史中自然习得的格式，兼容处理）
-  <quote id="msg_id"/>     → Reply 组件
-  <face id="face_id"/>     → Face 组件（QQ 经典表情）
-  [Face: face_id]          → Face 组件（LLM 从聊天历史中自然习得的格式，兼容处理）
-  <refuse/>                → 取消本次回复
+标签说明（均同时兼容旧版 XML 格式与推荐的 bracket 格式）：
+  <mention id="user_id"/>  / [At: user_id]     → At 组件
+  <quote id="msg_id"/>     / [Quote: msg_id]   → Reply 组件
+  <face id="face_id"/>     / [Face: face_id]   → Face 组件（QQ 经典表情）
+  <refuse/>                / [Refuse]          → 取消本次回复
 """
 
 import re
@@ -22,8 +20,13 @@ _MENTION_XML_RE = re.compile(
     re.IGNORECASE,
 )
 _MENTION_NATIVE_RE = re.compile(r"\[At:\s*(\d+)\]")
+_QUOTE_XML_RE = re.compile(
+    r"""<quote\s+id\s*=\s*['"](?P<quote_xml>[^'"]+)['"]\s*/?>""",
+    re.IGNORECASE,
+)
+_QUOTE_NATIVE_RE = re.compile(r"\[Quote:\s*(?P<quote_native>[^\]]+)\]", re.IGNORECASE)
 _QUOTE_RE = re.compile(
-    r"""<quote\s+id\s*=\s*['"]([^'"]+)['"]\s*/?>""",
+    "|".join([_QUOTE_XML_RE.pattern, _QUOTE_NATIVE_RE.pattern]),
     re.IGNORECASE,
 )
 _FACE_RE = re.compile(
@@ -31,7 +34,7 @@ _FACE_RE = re.compile(
     re.IGNORECASE,
 )
 _FACE_NATIVE_RE = re.compile(r"\[Face:\s*(\d+)\]", re.IGNORECASE)
-_REFUSE_RE = re.compile(r"<refuse\s*/?>", re.IGNORECASE)
+_REFUSE_RE = re.compile(r"<refuse\s*/?>|\[Refuse\]", re.IGNORECASE)
 
 
 # ── 公开函数 ─────────────────────────────────────────────
@@ -112,14 +115,14 @@ def clean_response_text_for_history(text: str) -> str:
 
 
 def has_refuse_tag(text: str) -> bool:
-    """检查文本是否完整匹配 <refuse/>（不含任何额外内容）。"""
+    """检查文本是否完整匹配 <refuse/> 或 [Refuse]（不含任何额外内容）。"""
     if not text:
         return False
     return bool(_REFUSE_RE.fullmatch(text.strip()))
 
 
 def chain_has_refuse_tag(chain: list) -> bool:
-    """检查结果链是否为单个 <refuse/> 的 Plain 组件。"""
+    """检查结果链是否为单个 refuse 标签的 Plain 组件。"""
     if len(chain) != 1:
         return False
     comp = chain[0]
@@ -171,7 +174,9 @@ def _extract_quote_id(chain: list, parse_quote: bool) -> Optional[str]:
             continue
         match = _QUOTE_RE.search(comp.text)
         if match:
-            return _normalize_quote_id(match.group(1))
+            gd = match.groupdict()
+            raw_id = gd.get("quote_xml") or gd.get("quote_native")
+            return _normalize_quote_id(raw_id)
     return None
 
 
