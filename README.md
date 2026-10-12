@@ -13,7 +13,7 @@
 - **@提及**：LLM 输出 `[At: user_id]`（或 `<mention id="user_id"/>`）自动转为平台 At 组件
 - **引用回复**：LLM 输出 `[Quote: msg_id]`（或 `<quote id="msg_id"/>`）自动转为平台 Reply 组件
 - **QQ 表情**：LLM 输出 `[Face: face_id]`（或 `<face id="face_id"/>`）自动转为平台 Face 组件（QQ 经典表情）。表情 id → 名称映射不写死在代码中，插件加载时（AstrBot 整体启动，或仅热重载/更新本插件）会自动从 [koishi.js.org/QFace](https://koishi.js.org/QFace) 下载最新数据并缓存到插件数据目录（覆盖旧缓存），无需重启整个 AstrBot 进程
-- **拒绝回复**：LLM 输出 `[Refuse]`（或 `<refuse/>`）取消本次发送，Bot 保持沉默
+- **拒绝回复**：提示 LLM 在当前消息没有具体内容时只输出 `<refuse/>`，取消本次发送，Bot 保持沉默；也兼容单独输出 `[Refuse]`
 - **独立控制**：四个标签各自可独立开关
 - **格式兼容**：四个标签均同时支持 bracket 格式（`[Type: value]`，与聊天历史格式一致，LLM 会自然使用）与旧版 XML 格式
 

@@ -85,9 +85,11 @@ def build_interaction_instructions(
     if refuse_enable:
         parts.append(
             "## Refuse\n"
-            "如果你决定不回复当前消息，输出 `[Refuse]` 作为完整回复。\n"
-            "必须是纯文本 `[Refuse]`，不能有任何其他内容，前后不能有额外文字。\n"
-            "任何其他格式会被视为普通文本正常发送。"
+            "当当前消息没有具体内容（例如空白消息或没有实际信息、问题或请求）时，"
+            "只输出 `<refuse/>`，不要强行回复。\n"
+            "如果你决定不回复当前消息，也只输出 `<refuse/>` 作为完整回复。\n"
+            "必须是纯文本 `<refuse/>`，不能附带解释、其他文字、标签或 Markdown 包裹。\n"
+            "也兼容 `[Refuse]`，但同样必须单独作为完整回复，否则会作为普通文本正常发送。"
         )
 
     return "\n\n".join(parts)
